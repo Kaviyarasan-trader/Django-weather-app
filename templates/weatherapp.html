@@ -1,0 +1,356 @@
+{% extends 'index.html' %}
+{% block content %}
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0b1120;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    color: #e8eaf0;
+  }
+
+  /* ── Background atmosphere ── */
+  .weather-bg {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(56, 100, 180, 0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 80%, rgba(30, 60, 120, 0.15) 0%, transparent 55%),
+      #0b1120;
+    padding: 48px 16px 80px;
+  }
+
+  /* ── Page header ── */
+  .page-header-wrap {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .page-eyebrow {
+    font-size: 10px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: #5b7ab5;
+    margin-bottom: 10px;
+  }
+  .page-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 38px;
+    font-weight: 700;
+    color: #e8eaf0;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  .page-title span {
+    color: #f0c060;
+  }
+  .page-sub {
+    font-size: 13px;
+    color: #4a5a7a;
+    letter-spacing: .04em;
+  }
+
+  /* ── Search card ── */
+  .search-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 24px 28px;
+    max-width: 480px;
+    margin: 0 auto 40px;
+    backdrop-filter: blur(10px);
+  }
+  .search-label {
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #5b7ab5;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .search-row {
+    display: flex;
+    gap: 10px;
+  }
+  .search-input {
+    flex: 1;
+    height: 46px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px;
+    color: #e8eaf0;
+    font-size: 14px;
+    padding: 0 16px;
+    outline: none;
+    transition: border-color .2s;
+    font-family: 'Inter', sans-serif;
+  }
+  .search-input::placeholder { color: #3a4a6a; }
+  .search-input:focus { border-color: rgba(240,192,96,0.4); }
+  .search-btn {
+    height: 46px;
+    background: #f0c060;
+    color: #0b1120;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0 20px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: opacity .15s, transform .1s;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+  }
+  .search-btn:hover { opacity: .88; }
+  .search-btn:active { transform: scale(.97); }
+
+  /* ── Alerts ── */
+  .alert-wrap { max-width: 480px; margin: 0 auto 20px; }
+  .alert-premium {
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid;
+  }
+  .alert-success-p {
+    background: rgba(52, 168, 83, 0.12);
+    border-color: rgba(52, 168, 83, 0.25);
+    color: #6fcf97;
+  }
+  .alert-danger-p {
+    background: rgba(235, 87, 87, 0.12);
+    border-color: rgba(235, 87, 87, 0.25);
+    color: #f07070;
+  }
+
+  /* ── Weather grid ── */
+  .weather-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ── Weather card ── */
+  .weather-card {
+    width: 260px;
+    flex: 0 0 260px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 20px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s, border-color .2s;
+    backdrop-filter: blur(8px);
+  }
+  .weather-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(240,192,96,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .weather-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(240,192,96,0.18);
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .city-name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #e8eaf0;
+    line-height: 1.2;
+  }
+  .country-tag {
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #4a5a7a;
+    margin-top: 3px;
+  }
+  .delete-btn {
+    width: 32px;
+    height: 32px;
+    background: rgba(235, 87, 87, 0.08);
+    border: 1px solid rgba(235, 87, 87, 0.18);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #e05555;
+    font-size: 14px;
+    transition: background .15s, border-color .15s;
+    flex-shrink: 0;
+  }
+  .delete-btn:hover {
+    background: rgba(235, 87, 87, 0.18);
+    border-color: rgba(235, 87, 87, 0.35);
+    color: #f07070;
+    text-decoration: none;
+  }
+
+  .card-mid {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .weather-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .weather-icon img { width: 44px; height: 44px; }
+
+  .temp-value {
+    font-size: 36px;
+    font-weight: 600;
+    color: #f0c060;
+    line-height: 1;
+    letter-spacing: -.01em;
+  }
+  .temp-unit {
+    font-size: 16px;
+    font-weight: 400;
+    color: #7a8aaa;
+  }
+
+  .card-bottom {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 14px;
+  }
+  .weather-desc {
+    font-size: 13px;
+    color: #7a8aaa;
+    text-transform: capitalize;
+    letter-spacing: .03em;
+  }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 0;
+    color: #3a4a6a;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: .4;
+  }
+  .empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #4a5a7a;
+    margin-bottom: 6px;
+  }
+  .empty-sub { font-size: 13px; color: #3a4a6a; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .page-title { font-size: 28px; }
+    .search-card { padding: 18px; }
+    .weather-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="weather-bg">
+
+  <!-- Header -->
+  <div class="page-header-wrap">
+    <div class="page-eyebrow">Live Weather</div>
+    <h1 class="page-title">Weather <span>Dashboard</span></h1>
+    <p class="page-sub">Real-time conditions for your tracked cities</p>
+  </div>
+
+  <!-- Alerts -->
+  {% if messages %}
+  <div class="alert-wrap">
+    {% for message in messages %}
+      {% if message.tags == 'error' %}
+        <div class="alert-premium alert-danger-p">
+          <span class="fa fa-exclamation-circle me-2"></span> {{ message }}
+        </div>
+      {% else %}
+        <div class="alert-premium alert-success-p">
+          <span class="fa fa-check-circle me-2"></span> {{ message }}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Search -->
+  <div class="search-card">
+    <span class="search-label">Track a city</span>
+    <form method="POST">
+      {% csrf_token %}
+      <div class="search-row">
+        <input type="text" name="name" class="search-input" placeholder="Enter city name...">
+        <button type="submit" class="search-btn">
+          <span class="fa fa-plus"></span> Add City
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Weather Cards -->
+  {% if data %}
+  <div class="weather-grid">
+    {% for city_weather in data %}
+    <div class="weather-card">
+      <div class="card-top">
+        <div>
+          <div class="city-name">{{ city_weather.city }}</div>
+          <div class="country-tag">{{ city_weather.country }}</div>
+        </div>
+        <a href="{% url 'DCity' city_weather.city %}" class="delete-btn" title="Remove city">&#x2715;</a>
+      </div>
+      <div class="card-mid">
+        <div class="weather-icon">
+          <img src="http://openweathermap.org/img/w/{{ city_weather.icon }}.png" alt="{{ city_weather.description }}">
+        </div>
+        <div class="temp-block">
+          <div class="temp-value">{{ city_weather.temperature }}<span class="temp-unit">°C</span></div>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <div class="weather-desc">{{ city_weather.description }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon"><span class="fas fa-cloud-sun"></span></div>
+    <div class="empty-title">No cities tracked yet</div>
+    <div class="empty-sub">Search for a city above to start tracking weather conditions.</div>
+  </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}
